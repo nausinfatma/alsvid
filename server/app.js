@@ -1,7 +1,11 @@
 import cors from 'cors';
 import express from 'express';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const distPath = fileURLToPath(new URL('../dist/', import.meta.url));
+const indexPath = path.join(distPath, 'index.html');
 
 function validateContact(body) {
   const errors = {};
@@ -125,6 +129,14 @@ export function createApp({
         error: 'Email delivery failed. Check the SMTP settings or try again later.',
       });
     }
+  });
+
+  app.use(express.static(distPath));
+  app.get('/{*path}', (req, res, next) => {
+    if (req.path === '/api' || req.path.startsWith('/api/')) return next();
+    return res.sendFile(indexPath, error => {
+      if (error) next(error);
+    });
   });
 
   app.use((req, res) => res.status(404).json({ ok: false, error: 'Not found.' }));

@@ -44,6 +44,25 @@ test('valid contact request is sent and acknowledged', async () => {
   assert.match(sent[0].text, /I would like to know more/);
 });
 
+test('frontend routes serve the Vite app entry point', async () => {
+  const baseUrl = await startApi({});
+
+  for (const route of ['/', '/professional-services']) {
+    const response = await fetch(`${baseUrl}${route}`);
+    assert.equal(response.status, 200);
+    assert.match(response.headers.get('content-type'), /text\/html/);
+    assert.match(await response.text(), /<div id="root"><\/div>/);
+  }
+});
+
+test('unknown API routes retain JSON 404 responses', async () => {
+  const baseUrl = await startApi({});
+  const response = await fetch(`${baseUrl}/api/not-a-route`);
+
+  assert.equal(response.status, 404);
+  assert.deepEqual(await response.json(), { ok: false, error: 'Not found.' });
+});
+
 test('invalid contact fields are rejected without sending email', async () => {
   let sendCount = 0;
   const baseUrl = await startApi({ transporter: { sendMail: async () => { sendCount += 1; } } });
